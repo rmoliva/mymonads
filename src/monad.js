@@ -1,31 +1,26 @@
-const R = require('ramda');
+const { Utils } = require('./utils');
 
-const Utils = {
-  equals: function(other) {
-    return this.isSameType(other) && R.equals(other._value, this._value);
-  },
-  toString: function() {
-    return `${this._className} (${this._value})`;
-  },
-  inspect: function(label) {
-    return `- ${label} : ${this.toString()}`;
-  },
-  log: function(label) {
-    console.log(this.inspect(label));
-  },
-  isSameType: function(other) {
-    return this._className === other._className
-  },
-};
-
-const Monad = function(value) {
+const MonadDef = function(value) {
+  const _class = Monad;
   const _className = 'Monad';
+
+  const _mustBeFunction = function(f, caller, message) {
+    if(typeof f !== "function") {
+      throw new TypeError(`${this._className}.${caller}: ${message}`)
+    }
+  }
+
+  const _mustBeSameType = function(m, caller, message) {
+    if(!this.isSameType(m)) {
+      throw new TypeError(`${this._className}.${caller}: ${message}`)
+    }
+  }
 
   /// Functor
   // u.map(a => a) is equivalent to u (identity)
   // u.map(x => f(g(x))) is equivalent to u.map(g).map(f) (composition)
   const _map = function(fn) {
-    return Monad(fn(this._value));
+    return this._class.of(fn(this._value));
   };
 
   /// Apply Fantasy Land
@@ -40,29 +35,60 @@ const Monad = function(value) {
   // Applicative Mostly Adequate
   // A.of(id).ap(v) == v (identity)
   const _ap = function(m) {
-    if(typeof value !== "function") {
-      throw new TypeError(`${this._className}.ap: Wrapped value must be a function`)
-    }
-    
-    if(!this.isSameType(m)) {
-      throw new TypeError(`${this._className}.ap: ${this._className} required (${m._className})`)
-    }
+    const value = this._value;
+    _mustBeFunction.call(this, value, 'ap', `Wrapped value must be a function`);
+    _mustBeSameType.call(this, m, 'ap', `${this._className} required (${m._className})`);
     return  m.map(this._value);
   };
-  
+
+  const _join = function() {
+    return this._value;
+  };
+
+  const _chain = function(f) {
+    _mustBeFunction.call(this, f, 'chain', `Passed value must be a function`);
+    const m = this.map(f).join();
+    _mustBeSameType.call(this, m, 'chain', `${this._className} required (${m._className})`);
+    return m;
+  };
+
   let def = {
     _value: value,
+    _class,
     _className,
     apFL: _apFL,
     ap: _ap,
+    join: _join,
     map: _map,
+    chain: _chain,
   };
-  def = Object.assign({}, def, Utils);
-  return Object.create(def);
+  return Object.assign({}, Utils, def)
 };
 
-Monad.of = function(value) {
-  return Monad(value);
-}
+const Monad = {
+  of: function(value) {
+    return Object.create(MonadDef(value));
+  },
+};
 
-module.exports = { Monad };
+module.exports = { Monad, MonadDef };
+
+// https://livebook.manning.com/#!/book/functional-programming-in-javascript/chapter-5/260
+// // Function lifting
+
+// const safeFindObject = R.curry(function(db, id) {
+//   return Maybe.fromNullable(find(db, id));
+// });
+
+// // Previous is the same as:
+
+// const lift = R.curry(function (f, value) {
+//   return Maybe.fromNullable(value).map(f);
+// });
+
+// const findObject = R.curry(function(db, id) {
+//   return find(db, id);
+// });
+
+// const safeFindObject = R.compose(lift, findObject);
+// safeFindObject(DB('student'), '444-44-4444');

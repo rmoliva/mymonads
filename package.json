@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/.bin/mocha spec/*.spec.js"
+    "babel": "babel --presets es2015 js/main.js -o build/main.bundle.js",
+    "test": "./node_modules/.bin/karma start",
+    "build": "./node_modules/.bin/webpack --progress --colors --watch"
   },
   "author": "",
   "license": "ISC",
@@ -21,6 +23,19 @@
     "mocha": "^4.0.1"
   },
   "devDependencies": {
-    "chai": "^4.1.2"
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "chai": "^4.1.2",
+    "karma": "^1.7.1",
+    "karma-chai": "^0.1.0",
+    "karma-mocha": "^1.3.0",
+    "karma-mocha-reporter": "^2.2.5",
+    "karma-phantomjs-launcher": "^1.0.4",
+    "karma-webpack": "^2.0.5",
+    "phantomjs-polyfill-object-assign": "0.0.2",
+    "webpack": "^3.8.1"
   }
 }
